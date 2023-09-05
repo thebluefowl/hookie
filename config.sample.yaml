@@ -1,0 +1,6 @@
+port: 1983
+rabbitmq:
+  username: hookie
+  password: hookie
+  host: localhost
+  port: 5672

@@ -1,0 +1,15 @@
+- ruleset:
+    name: example_ruleset
+    rules:
+      - name: rule_1
+        property: path
+        comparator: contains
+        value:
+          value: "bar"
+    operator: and
+  action:
+    upstream: "https://eoekq178y2baje5.m.pipedream.net"
+    delivery_mode: queued
+    timeout: 10
+    delay: 10
+    retries: 3
