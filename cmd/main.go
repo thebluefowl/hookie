@@ -6,8 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
+	"github.com/thebluefowl/hookie/forwarder"
 	"github.com/thebluefowl/hookie/listener"
 	"github.com/thebluefowl/hookie/model"
 	"github.com/thebluefowl/hookie/queue"
@@ -32,7 +34,7 @@ func main() {
 	defer c.Close()
 	handleErrorWithMessage(err, "failed to open config file")
 
-	ra, err := parseRules(r)
+	rulesetActions, err := parseRules(r)
 	handleErrorWithMessage(err, "failed to parse rules")
 
 	config, err := parseConfig(c)
@@ -41,13 +43,16 @@ func main() {
 	queue, err := getQueue(config)
 	handleErrorWithMessage(err, "failed to initialize queue")
 
+	instantForwarder := forwarder.NewInstantForwarder(http.DefaultTransport)
+	queuedForwarder := forwarder.NewQueuedForwarder(queue)
+
 	listener := listener.New(queue)
 	go func() {
 		err = listener.Listen(ctx)
 		fmt.Println(err)
 	}()
 
-	server := server.New(ctx, ra, queue)
+	server := server.New(rulesetActions, instantForwarder, queuedForwarder)
 	err = server.ListenAndServe(fmt.Sprintf("%s:%d", "", config.Port))
 	handleErrorWithMessage(err, "failed to start server")
 
