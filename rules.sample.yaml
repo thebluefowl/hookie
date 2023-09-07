@@ -8,7 +8,7 @@
           value: "bar"
     operator: and
   action:
-    upstream: "https://eoekq178y2baje5.m.pipedream.net"
+    upstream: "http://localhost:3475"
     delivery_mode: queued
     timeout: 10
     delay: 10

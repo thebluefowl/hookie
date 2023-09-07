@@ -17,6 +17,7 @@ type TargetRequest struct {
 func NewTargetRequest(in *http.Request, target *url.URL) (*TargetRequest, error) {
 	ctx := in.Context()
 	out := in.Clone(ctx)
+	out.Host = in.Host
 
 	setupURL(out, target)
 	setupHeaders(out, in)
@@ -33,25 +34,36 @@ func NewTargetRequest(in *http.Request, target *url.URL) (*TargetRequest, error)
 	}, nil
 }
 
-type RequestPayload struct {
+type SerializableRequest struct {
 	Headers map[string][]string
 	Body    []byte
 	Method  string
 	URL     string
+	Host    string
 }
 
 func (tr *TargetRequest) MarshalJSON() ([]byte, error) {
-	payload := &RequestPayload{
+	payload := &SerializableRequest{
 		Headers: make(map[string][]string),
 		Body:    make([]byte, 0),
+		Host:    tr.Request.Host,
 		Method:  tr.Request.Method,
 		URL:     tr.Request.URL.String(),
 	}
+	for k, v := range tr.Request.Header {
+		payload.Headers[k] = v
+	}
+	defer tr.Request.Body.Close()
+	buf, err := io.ReadAll(tr.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+	payload.Body = buf
 	return json.Marshal(payload)
 }
 
 func (tr *TargetRequest) UnmarshalJSON(data []byte) error {
-	payload := &RequestPayload{
+	payload := &SerializableRequest{
 		Headers: make(map[string][]string),
 		Body:    make([]byte, 0),
 	}
@@ -68,6 +80,7 @@ func (tr *TargetRequest) UnmarshalJSON(data []byte) error {
 	}
 	tr.Request.URL, _ = url.Parse(payload.URL)
 	tr.Request.Body = io.NopCloser(bytes.NewBuffer(payload.Body))
+	tr.Request.Host = payload.Host
 	return nil
 }
 

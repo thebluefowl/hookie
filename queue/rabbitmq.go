@@ -87,7 +87,6 @@ func (r *RabbitMQ) StartConsumer(ctx context.Context, processor func(payload int
 				log.Printf("failed to process payload: %v", err)
 				return rabbitmq.NackRequeue
 			}
-
 			return rabbitmq.Ack
 		},
 		r.QueueName,

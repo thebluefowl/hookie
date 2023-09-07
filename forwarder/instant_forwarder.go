@@ -22,16 +22,16 @@ func NewInstantForwarder(roundTripper http.RoundTripper) *InstantForwarder {
 }
 
 func (fw *InstantForwarder) Forward(req *http.Request, target *url.URL) (*http.Response, error) {
-	out, err := proxyutils.NewTargetRequest(req, target)
+	targetRequest, err := proxyutils.NewTargetRequest(req, target)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := fw.roundTripper.RoundTrip(out.Request)
+	res, err := fw.roundTripper.RoundTrip(targetRequest.Request)
 	if err != nil {
 		return nil, err
 	}
 
-	tr := proxyutils.NewTargetResponse(res)
-	return tr.Response, nil
+	targetResponse := proxyutils.NewTargetResponse(res)
+	return targetResponse.Response, nil
 }

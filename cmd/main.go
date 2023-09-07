@@ -46,7 +46,7 @@ func main() {
 	instantForwarder := forwarder.NewInstantForwarder(http.DefaultTransport)
 	queuedForwarder := forwarder.NewQueuedForwarder(queue)
 
-	listener := listener.New(queue)
+	listener := listener.New(queue, http.DefaultTransport	)
 	go func() {
 		err = listener.Listen(ctx)
 		fmt.Println(err)

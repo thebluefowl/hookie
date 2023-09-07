@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"io"
 
 	"net/http"
@@ -34,12 +35,20 @@ func New(rulesetActions []model.RulesetAction, instantForwarder, queuedForwarder
 
 // ServeHTTP is the HTTP request handler for the server.
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	res, err := s.process(req)
+	ra, err := s.matchingRulesetAction(req)
+	if err != nil {
+		slog.Error("failed to select ruleset-action", slog.Any("err", err))
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	res, err := s.process(req, ra)
 	if err != nil {
 		slog.Error("failed to process request", slog.Any("err", err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
+
 	w.WriteHeader(res.StatusCode)
 	if res.Body != nil {
 		_, err := io.Copy(w, res.Body)
@@ -55,12 +64,7 @@ func (s *Server) ListenAndServe(addr string) error {
 }
 
 // process handles the incoming request by matching it to a ruleset and then processing it based on the delivery mode.
-func (s *Server) process(req *http.Request) (*http.Response, error) {
-	ra, err := s.matchingRulesetAction(req)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Server) process(req *http.Request, ra *model.RulesetAction) (*http.Response, error) {
 	if ra != nil {
 		fw, ok := s.forwarders[ra.Action.DeliveryMode]
 		if !ok {
@@ -82,5 +86,5 @@ func (s *Server) matchingRulesetAction(req *http.Request) (*model.RulesetAction,
 			return &ra, nil
 		}
 	}
-	return nil, nil
+	return nil, errors.New("no matching ruleset action found")
 }
