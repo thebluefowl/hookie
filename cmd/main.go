@@ -34,7 +34,7 @@ func main() {
 	defer c.Close()
 	handleErrorWithMessage(err, "failed to open config file")
 
-	rulesetActions, err := parseRules(r)
+	rule, err := parseRules(r)
 	handleErrorWithMessage(err, "failed to parse rules")
 
 	config, err := parseConfig(c)
@@ -46,13 +46,12 @@ func main() {
 	instantForwarder := forwarder.NewInstantForwarder(http.DefaultTransport)
 	queuedForwarder := forwarder.NewQueuedForwarder(queue)
 
-	listener := listener.New(queue, http.DefaultTransport	)
+	listener := listener.New(queue, http.DefaultTransport)
 	go func() {
 		err = listener.Listen(ctx)
-		fmt.Println(err)
 	}()
 
-	server := server.New(rulesetActions, instantForwarder, queuedForwarder)
+	server := server.New(rule, instantForwarder, queuedForwarder)
 	err = server.ListenAndServe(fmt.Sprintf("%s:%d", "", config.Port))
 	handleErrorWithMessage(err, "failed to start server")
 
@@ -65,8 +64,8 @@ func handleErrorWithMessage(err error, message string) {
 	}
 }
 
-func parseRules(r io.Reader) ([]model.RulesetAction, error) {
-	var rules []model.RulesetAction
+func parseRules(r io.Reader) ([]model.Rule, error) {
+	var rules []model.Rule
 	err := yaml.NewDecoder(r).Decode(&rules)
 	return rules, err
 }

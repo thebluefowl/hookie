@@ -5,21 +5,21 @@ import (
 	"net/http"
 )
 
-type Ruleset struct {
-	Name     string   `yaml:"name"`
-	Rules    []Rule   `yaml:"rules"`
-	Operator Operator `yaml:"operator"`
+type TriggerSet struct {
+	Name     string    `yaml:"name"`
+	Triggers []Trigger `yaml:"triggers"`
+	Operator Operator  `yaml:"operator"`
 }
 
 // Match checks if the given request matches the rules defined in the Ruleset.
 // It uses the Operator to determine how rules should be combined (AND or OR logic).
-func (rs *Ruleset) Match(req *http.Request) (bool, error) {
+func (ts *TriggerSet) Match(req *http.Request) (bool, error) {
 	var errs []error // Collects errors from rule matching
 
-	switch rs.Operator {
+	switch ts.Operator {
 	case OperatorOr:
 		// For OR logic, only one rule needs to match.
-		for _, r := range rs.Rules {
+		for _, r := range ts.Triggers {
 			result, err := r.Match(req)
 
 			// If there's an error, collect it.
@@ -37,7 +37,7 @@ func (rs *Ruleset) Match(req *http.Request) (bool, error) {
 
 	default:
 		// Default to AND logic: all rules must match.
-		for _, r := range rs.Rules {
+		for _, r := range ts.Triggers {
 			result, err := r.Match(req)
 
 			// If there's an error, collect it.

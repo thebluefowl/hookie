@@ -3,7 +3,6 @@ package queue
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/wagslane/go-rabbitmq"
 )
@@ -49,7 +48,6 @@ func NewRabbitMQ(opts *RabbitMQOpts) (*RabbitMQ, error) {
 
 	publisher, err := rabbitmq.NewPublisher(
 		conn,
-		rabbitmq.WithPublisherOptionsLogging,
 		rabbitmq.WithPublisherOptionsExchangeName(opts.ExchangeName),
 		rabbitmq.WithPublisherOptionsExchangeDeclare,
 		rabbitmq.WithPublisherOptionsExchangeDurable,
@@ -75,33 +73,38 @@ func (r *RabbitMQ) Publish(ctx context.Context, body []byte) error {
 		rabbitmq.WithPublishOptionsContentType("application/octet-stream"),
 		rabbitmq.WithPublishOptionsExchange(r.ExchangeName),
 	)
-	fmt.Println("errror", err)
 	return err
 }
 
 func (r *RabbitMQ) StartConsumer(ctx context.Context, processor func(payload interface{}) error) error {
+	// Check if the context is already done
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	consumeFunc := func(d rabbitmq.Delivery) rabbitmq.Action {
+		err := processor(d.Body).(*Error)
+		if err != nil {
+			if err.IsFatal() {
+				return rabbitmq.NackDiscard
+			}
+			return rabbitmq.NackRequeue
+		}
+		return rabbitmq.Ack
+	}
+
 	consumer, err := rabbitmq.NewConsumer(
 		r.conn,
-		func(d rabbitmq.Delivery) rabbitmq.Action {
-			if err := processor(d.Body); err != nil {
-				log.Printf("failed to process payload: %v", err)
-				return rabbitmq.NackRequeue
-			}
-			return rabbitmq.Ack
-		},
+		consumeFunc,
 		r.QueueName,
 		rabbitmq.WithConsumerOptionsRoutingKey(r.RoutingKey),
 		rabbitmq.WithConsumerOptionsExchangeName(r.ExchangeName),
 	)
-
 	if err != nil {
-		log.Fatalf("failed to create RabbitMQ consumer: %v", err)
-		return err
+		return fmt.Errorf("failed to start RabbitMQ consumer: %w", err)
 	}
-
 	defer consumer.Close()
 
-	// wait till context is done
 	<-ctx.Done()
 
 	return nil

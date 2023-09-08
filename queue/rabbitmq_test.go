@@ -2,7 +2,6 @@ package queue
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -71,7 +70,6 @@ func TestRabbitMQ_StartConsumer(t *testing.T) {
 
 	received := make(chan interface{}, len(messages))
 	err = rmq.StartConsumer(ctx, func(body interface{}) error {
-		fmt.Println(body)
 		received <- body
 		return nil
 	})

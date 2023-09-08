@@ -11,18 +11,18 @@ import (
 func TestRuleset_Match(t *testing.T) {
 	tests := []struct {
 		name       string
-		ruleset    *Ruleset
+		TriggerSet *TriggerSet
 		req        *http.Request
 		wantErr    bool
 		wantResult bool
 	}{
 		{
 			name: "AND match",
-			ruleset: &Ruleset{
+			TriggerSet: &TriggerSet{
 				Name: "test",
-				Rules: []Rule{
-					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: Target{Value: "/test"}},
-					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: Target{Value: "GET"}},
+				Triggers: []Trigger{
+					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "/test"}},
+					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "GET"}},
 				},
 				Operator: OperatorAnd,
 			},
@@ -32,11 +32,11 @@ func TestRuleset_Match(t *testing.T) {
 		},
 		{
 			name: "AND no match",
-			ruleset: &Ruleset{
+			TriggerSet: &TriggerSet{
 				Name: "test",
-				Rules: []Rule{
-					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: Target{Value: "/test"}},
-					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: Target{Value: "GET"}},
+				Triggers: []Trigger{
+					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "/test"}},
+					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "GET"}},
 				},
 				Operator: OperatorAnd,
 			},
@@ -46,11 +46,11 @@ func TestRuleset_Match(t *testing.T) {
 		},
 		{
 			name: "OR match",
-			ruleset: &Ruleset{
+			TriggerSet: &TriggerSet{
 				Name: "test",
-				Rules: []Rule{
-					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: Target{Value: "/test"}},
-					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: Target{Value: "GET"}},
+				Triggers: []Trigger{
+					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "/test"}},
+					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "GET"}},
 				},
 				Operator: OperatorOr,
 			},
@@ -60,10 +60,10 @@ func TestRuleset_Match(t *testing.T) {
 		},
 		{
 			name: "Header mismatch error",
-			ruleset: &Ruleset{
+			TriggerSet: &TriggerSet{
 				Name: "test",
-				Rules: []Rule{
-					{Property: PropertyHeader, comparator: &ComparatorEqual{}, Value: Target{Key: "key", Value: "value"}},
+				Triggers: []Trigger{
+					{Property: PropertyHeader, comparator: &ComparatorEqual{}, Value: PropertyValue{Key: "key", Value: "value"}},
 				},
 			},
 			req:        &http.Request{Method: http.MethodPost, URL: &url.URL{Path: "/test"}},
@@ -74,7 +74,7 @@ func TestRuleset_Match(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.ruleset.Match(tt.req)
+			result, err := tt.TriggerSet.Match(tt.req)
 
 			if tt.wantErr {
 				assert.Error(t, err)

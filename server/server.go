@@ -1,31 +1,29 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"io"
 
 	"net/http"
-	"net/url"
 
+	"github.com/google/uuid"
+	"github.com/thebluefowl/hookie/forwarder"
 	"github.com/thebluefowl/hookie/model"
 	"golang.org/x/exp/slog"
 )
 
-type Forwarder interface {
-	Forward(req *http.Request, target *url.URL) (*http.Response, error)
-}
-
 // Server represents the main HTTP server struct, holding necessary ruleset actions and the publisher.
 type Server struct {
-	rulesetActions []model.RulesetAction
-	forwarders     map[string]Forwarder
+	rulesetActions []model.Rule
+	forwarders     map[string]forwarder.Forwarder
 }
 
 // New creates a new instance of the Server.
-func New(rulesetActions []model.RulesetAction, instantForwarder, queuedForwarder Forwarder) *Server {
+func New(rulesetActions []model.Rule, instantForwarder, queuedForwarder forwarder.Forwarder) *Server {
 	return &Server{
 		rulesetActions: rulesetActions,
-		forwarders: map[string]Forwarder{
+		forwarders: map[string]forwarder.Forwarder{
 			model.DeliveryModeInstant: instantForwarder,
 			model.DeliveryModeQueued:  queuedForwarder,
 		},
@@ -35,6 +33,9 @@ func New(rulesetActions []model.RulesetAction, instantForwarder, queuedForwarder
 
 // ServeHTTP is the HTTP request handler for the server.
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
+	ctx := context.WithValue(req.Context(), model.ContextKey("request-id"), uuid.New().String())
+
 	ra, err := s.matchingRulesetAction(req)
 	if err != nil {
 		slog.Error("failed to select ruleset-action", slog.Any("err", err))
@@ -42,7 +43,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res, err := s.process(req, ra)
+	res, err := s.process(ctx, req, ra)
 	if err != nil {
 		slog.Error("failed to process request", slog.Any("err", err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
@@ -64,21 +65,21 @@ func (s *Server) ListenAndServe(addr string) error {
 }
 
 // process handles the incoming request by matching it to a ruleset and then processing it based on the delivery mode.
-func (s *Server) process(req *http.Request, ra *model.RulesetAction) (*http.Response, error) {
+func (s *Server) process(ctx context.Context, req *http.Request, ra *model.Rule) (*http.Response, error) {
 	if ra != nil {
 		fw, ok := s.forwarders[ra.Action.DeliveryMode]
 		if !ok {
 			return nil, model.ErrUnknownDeliveryMode
 		}
-		return fw.Forward(req, ra.Action.URL())
+		return fw.Forward(ctx, req, ra.Action.URL())
 	}
 	return nil, nil
 }
 
 // matchingRulesetAction finds the first matching ruleset action for a given request.
-func (s *Server) matchingRulesetAction(req *http.Request) (*model.RulesetAction, error) {
+func (s *Server) matchingRulesetAction(req *http.Request) (*model.Rule, error) {
 	for _, ra := range s.rulesetActions {
-		res, err := ra.Ruleset.Match(req)
+		res, err := ra.TriggerSet.Match(req)
 		if err != nil {
 			return nil, err
 		}

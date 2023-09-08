@@ -1,15 +1,15 @@
-- ruleset:
+- triggers:
     name: example_ruleset
-    rules:
+    triggers:
       - name: rule_1
         property: path
         comparator: contains
         value:
-          value: "bar"
+          value: "/ht"
     operator: and
   action:
-    upstream: "http://localhost:3475"
-    delivery_mode: queued
+    upstream: "http://10.136.14.189:8000"
+    delivery_mode: instant
     timeout: 10
     delay: 10
     retries: 3

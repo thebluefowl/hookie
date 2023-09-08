@@ -20,12 +20,12 @@ var (
 )
 
 type Comparator interface {
-	Compare(Target, interface{}) (bool, error)
+	Compare(PropertyValue, interface{}) (bool, error)
 }
 
 type ComparatorEqual struct{}
 
-func (c *ComparatorEqual) Compare(target Target, value interface{}) (bool, error) {
+func (c *ComparatorEqual) Compare(target PropertyValue, value interface{}) (bool, error) {
 	switch v := value.(type) {
 	case string:
 		return target.Value == v, nil
@@ -36,7 +36,7 @@ func (c *ComparatorEqual) Compare(target Target, value interface{}) (bool, error
 
 type ComparatorNotEqual struct{}
 
-func (c *ComparatorNotEqual) Compare(target Target, value interface{}) (bool, error) {
+func (c *ComparatorNotEqual) Compare(target PropertyValue, value interface{}) (bool, error) {
 	switch v := value.(type) {
 	case string:
 		return target.Value != v, nil
@@ -47,7 +47,7 @@ func (c *ComparatorNotEqual) Compare(target Target, value interface{}) (bool, er
 
 type ComparatorContains struct{}
 
-func (c *ComparatorContains) Compare(target Target, value interface{}) (bool, error) {
+func (c *ComparatorContains) Compare(target PropertyValue, value interface{}) (bool, error) {
 	switch v := value.(type) {
 	case string:
 		return strings.Contains(v, target.Value), nil
@@ -64,7 +64,7 @@ func (c *ComparatorContains) Compare(target Target, value interface{}) (bool, er
 
 type ComparatorNotContains struct{}
 
-func (c *ComparatorNotContains) Compare(target Target, value interface{}) (bool, error) {
+func (c *ComparatorNotContains) Compare(target PropertyValue, value interface{}) (bool, error) {
 	switch v := value.(type) {
 	case string:
 		return !strings.Contains(target.Value, v), nil

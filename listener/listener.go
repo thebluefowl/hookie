@@ -9,6 +9,7 @@ import (
 
 	"github.com/thebluefowl/hookie/model"
 	"github.com/thebluefowl/hookie/proxyutils"
+	"github.com/thebluefowl/hookie/queue"
 )
 
 type Listener struct {
@@ -30,18 +31,22 @@ func (l *Listener) Listen(ctx context.Context) error {
 	return l.consumer.StartConsumer(ctx, func(body interface{}) error {
 		b, ok := body.([]byte)
 		if !ok {
-			return errors.New("payload should be []byte")
+			return queue.NewError(errors.New("payload should be []byte"), true)
 		}
 		tr := &proxyutils.TargetRequest{}
 		if err := json.Unmarshal(b, tr); err != nil {
-			return fmt.Errorf("failed to unmarshal target request: %w", err)
+			return queue.NewError(fmt.Errorf("failed to unmarshal payload: %w", err), true)
 		}
 		resp, err := l.transport.RoundTrip(tr.Request)
 		if err != nil {
-			return fmt.Errorf("failed to forward request: %w", err)
+			return queue.NewError(fmt.Errorf("failed to forward request: %w", err), false)
 		}
 		defer resp.Body.Close()
-		fmt.Println(resp.StatusCode)
+
+		if resp.StatusCode > http.StatusInternalServerError {
+			return queue.NewError(fmt.Errorf("failed to forward request: %s", resp.Status), false)
+
+		}
 		return nil
 	})
 }

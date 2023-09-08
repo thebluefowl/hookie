@@ -13,7 +13,7 @@ func TestComparatorEqual_Compare(t *testing.T) {
 	c := &ComparatorEqual{}
 
 	// 1. Test for matching strings
-	target := Target{Value: "hello"}
+	target := PropertyValue{Value: "hello"}
 	val := "hello"
 	result, err := c.Compare(target, val)
 	assert.True(t, result, "Expected strings to match and return true")
@@ -37,7 +37,7 @@ func TestComparatorNotEqual_Compare(t *testing.T) {
 	c := &ComparatorNotEqual{}
 
 	// 1. Test for non-matching strings
-	target := Target{Value: "hello"}
+	target := PropertyValue{Value: "hello"}
 	val := "world"
 	result, err := c.Compare(target, val)
 	assert.True(t, result, "Expected strings to not match and return true")
@@ -61,21 +61,21 @@ func TestComparatorContains_Compare(t *testing.T) {
 	c := &ComparatorContains{}
 
 	// 1. Test for string contains
-	target := Target{Value: "hello world"}
+	target := PropertyValue{Value: "hello world"}
 	val := "world"
 	result, err := c.Compare(target, val)
 	assert.True(t, result, "Expected target string to contain value string")
 	assert.Nil(t, err, "Expected no error for string contains")
 
 	// 2. Test for url.Values contains
-	target2 := Target{Key: "key1", Value: "value1"}
+	target2 := PropertyValue{Key: "key1", Value: "value1"}
 	val2 := url.Values{"key1": []string{"value1"}}
 	result, err = c.Compare(target2, val2)
 	assert.True(t, result, "Expected url.Values to contain target key-value pair")
 	assert.Nil(t, err, "Expected no error for url.Values contains")
 
 	// 3. Test for http.Header contains
-	target3 := Target{Key: "HeaderKey", Value: "HeaderValue"}
+	target3 := PropertyValue{Key: "HeaderKey", Value: "HeaderValue"}
 	val3 := http.Header{"HeaderKey": []string{"HeaderValue"}}
 	result, err = c.Compare(target3, val3)
 	assert.True(t, result, "Expected http.Header to contain target key-value pair")
@@ -92,7 +92,7 @@ func TestComparatorNotContains_Compare(t *testing.T) {
 	c := &ComparatorNotContains{}
 
 	// 1. Test for string not contains
-	target := Target{Value: "hello world"}
+	target := PropertyValue{Value: "hello world"}
 	val := "mars"
 	result, err := c.Compare(target, val)
 	assert.True(t, result, "Expected target string to not contain value string")
@@ -105,7 +105,7 @@ func TestComparatorNotContains_Compare(t *testing.T) {
 	assert.Nil(t, err, "Expected no error for string contains")
 
 	// 2. Test for url.Values not contains
-	target2 := Target{Key: "key1", Value: "value1"}
+	target2 := PropertyValue{Key: "key1", Value: "value1"}
 	val2 := url.Values{"key2": []string{"value2"}}
 	result, err = c.Compare(target2, val2)
 	assert.True(t, result, "Expected url.Values to not contain target key-value pair")
@@ -118,7 +118,7 @@ func TestComparatorNotContains_Compare(t *testing.T) {
 	assert.Nil(t, err, "Expected no error for url.Values contains")
 
 	// 3. Test for http.Header not contains
-	target3 := Target{Key: "HeaderKey", Value: "HeaderValue"}
+	target3 := PropertyValue{Key: "HeaderKey", Value: "HeaderValue"}
 	val3 := http.Header{"OtherHeaderKey": []string{"OtherValue"}}
 	result, err = c.Compare(target3, val3)
 	assert.True(t, result, "Expected http.Header to not contain target key-value pair")

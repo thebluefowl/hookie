@@ -17,14 +17,13 @@ type QueuedForwarder struct {
 	publisher Publisher
 }
 
-func NewQueuedForwarder(publisher Publisher) *QueuedForwarder {
+func NewQueuedForwarder(publisher Publisher) Forwarder {
 	return &QueuedForwarder{
 		publisher: publisher,
 	}
 }
 
-func (fw *QueuedForwarder) Forward(req *http.Request, target *url.URL) (*http.Response, error) {
-	ctx := req.Context()
+func (fw *QueuedForwarder) Forward(ctx context.Context, req *http.Request, target *url.URL) (*http.Response, error) {
 	out, err := proxyutils.NewTargetRequest(req, target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create target request: %w", err)

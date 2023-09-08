@@ -13,42 +13,56 @@ import (
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name      string
-		rule      *Rule
+		rule      *Trigger
 		wantError error
 	}{
 		{
-			name:      "PropertyPath with empty value should error",
-			rule:      &Rule{Property: PropertyPath, Value: Target{Value: ""}},
+			name: "PropertyPath with empty value should error",
+			rule: &Trigger{
+				Property: PropertyPath, Value: PropertyValue{Value: ""},
+			},
 			wantError: ErrEmptyRuleValue,
 		},
 		{
-			name:      "PropertyHost with valid value should pass",
-			rule:      &Rule{Property: PropertyHost, Value: Target{Value: "validValue"}},
+			name: "PropertyHost with valid value should pass",
+			rule: &Trigger{
+				Property: PropertyHost, Value: PropertyValue{Value: "validValue"},
+			},
 			wantError: nil,
 		},
 		{
-			name:      "PropertyMethod with empty value should error",
-			rule:      &Rule{Property: PropertyMethod, Value: Target{Value: ""}},
+			name: "PropertyMethod with empty value should error",
+			rule: &Trigger{
+				Property: PropertyMethod, Value: PropertyValue{Value: ""},
+			},
 			wantError: ErrEmptyRuleValue,
 		},
 		{
-			name:      "PropertyHeader with empty key should error",
-			rule:      &Rule{Property: PropertyHeader, Value: Target{Key: "", Value: "validValue"}},
+			name: "PropertyHeader with empty key should error",
+			rule: &Trigger{
+				Property: PropertyHeader, Value: PropertyValue{Key: "", Value: "validValue"},
+			},
 			wantError: ErrEmptyRuleValue,
 		},
 		{
-			name:      "PropertyHeader with unsupported comparator should error",
-			rule:      &Rule{Property: PropertyHeader, Value: Target{Key: "validKey", Value: "validValue"}, Comparator: "InvalidComparator"},
+			name: "PropertyHeader with unsupported comparator should error",
+			rule: &Trigger{
+				Property: PropertyHeader, Value: PropertyValue{Key: "validKey", Value: "validValue"},
+				Comparator: "InvalidComparator"},
 			wantError: fmt.Errorf("unsupported Comparator for property %s", PropertyHeader),
 		},
 		{
-			name:      "PropertyQuery with empty value should error",
-			rule:      &Rule{Property: PropertyQuery, Value: Target{Key: "validKey", Value: ""}},
+			name: "PropertyQuery with empty value should error",
+			rule: &Trigger{
+				Property: PropertyQuery, Value: PropertyValue{Key: "validKey", Value: ""},
+			},
 			wantError: ErrEmptyRuleValue,
 		},
 		{
-			name:      "PropertyQuery with valid key and value but unsupported comparator should error",
-			rule:      &Rule{Property: PropertyQuery, Value: Target{Key: "validKey", Value: "validValue"}, Comparator: "InvalidComparator"},
+			name: "PropertyQuery with valid key and value but unsupported comparator should error",
+			rule: &Trigger{
+				Property: PropertyQuery, Value: PropertyValue{Key: "validKey", Value: "validValue"},
+				Comparator: "InvalidComparator"},
 			wantError: fmt.Errorf("unsupported Comparator for property %s", PropertyQuery),
 		},
 		// You can add more test cases if needed
@@ -133,13 +147,13 @@ operator: AND`),
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			ruleset := &Ruleset{}
+			ruleset := &TriggerSet{}
 			err := yaml.Unmarshal(tt.data, ruleset)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.IsType(t, tt.wantType, ruleset.Rules[0].comparator)
+				assert.IsType(t, tt.wantType, ruleset.Triggers[0].comparator)
 			}
 		})
 	}
@@ -204,9 +218,9 @@ func TestProperty_Value(t *testing.T) {
 }
 
 func TestRule_Match(t *testing.T) {
-	rule := &Rule{
+	rule := &Trigger{
 		Property:   PropertyPath,
-		Value:      Target{Value: "/testpath"},
+		Value:      PropertyValue{Value: "/testpath"},
 		comparator: &ComparatorEqual{},
 	}
 

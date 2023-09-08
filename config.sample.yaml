@@ -1,4 +1,4 @@
-port: 1983
+port: 80
 rabbitmq:
   username: hookie
   password: hookie
