@@ -3,7 +3,6 @@ package forwarder
 import (
 	"context"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 
 	"github.com/thebluefowl/hookie/proxyutils"
@@ -28,10 +27,6 @@ func (fw *InstantForwarder) Forward(ctx context.Context, req *http.Request, targ
 	if err != nil {
 		return nil, err
 	}
-
-	x, _ := httputil.DumpRequest(targetRequest.Request, true)
-	println(string(x))
-
 	res, err := fw.roundTripper.RoundTrip(targetRequest.Request)
 	if err != nil {
 		return nil, err
