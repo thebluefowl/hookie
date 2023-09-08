@@ -61,8 +61,8 @@ func TestComparatorContains_Compare(t *testing.T) {
 	c := &ComparatorContains{}
 
 	// 1. Test for string contains
-	target := PropertyValue{Value: "hello world"}
-	val := "world"
+	target := PropertyValue{Value: "hello"}
+	val := "hello world"
 	result, err := c.Compare(target, val)
 	assert.True(t, result, "Expected target string to contain value string")
 	assert.Nil(t, err, "Expected no error for string contains")

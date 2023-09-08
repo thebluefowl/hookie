@@ -83,9 +83,10 @@ func (r *RabbitMQ) StartConsumer(ctx context.Context, processor func(payload int
 	}
 
 	consumeFunc := func(d rabbitmq.Delivery) rabbitmq.Action {
-		err := processor(d.Body).(*Error)
+		err := processor(d.Body)
 		if err != nil {
-			if err.IsFatal() {
+			e := err.(*Error)
+			if e.IsFatal() {
 				return rabbitmq.NackDiscard
 			}
 			return rabbitmq.NackRequeue

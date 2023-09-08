@@ -19,42 +19,77 @@ import (
 )
 
 func main() {
-
 	ctx := context.Background()
 
+	rulesPath, configPath := parseFlags()
+
+	config := loadConfig(configPath)
+	rules := loadRules(rulesPath)
+
+	queue := initializeQueue(config)
+
+	initializeListener(ctx, queue)
+	initializeAndRunServer(rules, config, queue)
+}
+
+func parseFlags() (string, string) {
 	var rulesPath = flag.String("rules", "rules.yaml", "path to rules file")
 	var configPath = flag.String("config", "config.yaml", "path to config file")
 	flag.Parse()
+	return *rulesPath, *configPath
+}
 
-	r, err := os.Open(*rulesPath)
-	defer r.Close()
+func loadRules(rulesPath string) []model.Rule {
+	r, err := os.Open(rulesPath)
 	handleErrorWithMessage(err, "failed to open rules file")
+	defer closeFile(r, "failed to close rules file")
 
-	c, err := os.Open(*configPath)
-	defer c.Close()
-	handleErrorWithMessage(err, "failed to open config file")
-
-	rule, err := parseRules(r)
+	rules, err := parseRules(r)
 	handleErrorWithMessage(err, "failed to parse rules")
+	return rules
+}
+
+func loadConfig(configPath string) *Config {
+	c, err := os.Open(configPath)
+	handleErrorWithMessage(err, "failed to open config file")
+	defer closeFile(c, "failed to close config file")
 
 	config, err := parseConfig(c)
 	handleErrorWithMessage(err, "failed to parse config")
+	return config
+}
 
+func closeFile(f *os.File, message string) {
+	if err := f.Close(); err != nil {
+		slog.Error(message, slog.Any("err", err))
+		os.Exit(1)
+	}
+}
+
+func initializeQueue(config *Config) model.PubSub {
 	queue, err := getQueue(config)
 	handleErrorWithMessage(err, "failed to initialize queue")
+	return queue
+}
 
+func initializeListener(ctx context.Context, queue model.PubSub) {
+	listener := listener.New(queue, http.DefaultTransport)
+	go func() {
+		if err := listener.Listen(ctx); err != nil {
+			slog.Error("listener error", slog.Any("err", err))
+			os.Exit(1)
+		}
+	}()
+}
+
+func initializeAndRunServer(rules []model.Rule, config *Config, queue model.PubSub) {
 	instantForwarder := forwarder.NewInstantForwarder(http.DefaultTransport)
 	queuedForwarder := forwarder.NewQueuedForwarder(queue)
 
-	listener := listener.New(queue, http.DefaultTransport)
-	go func() {
-		err = listener.Listen(ctx)
-	}()
-
-	server := server.New(rule, instantForwarder, queuedForwarder)
-	err = server.ListenAndServe(fmt.Sprintf("%s:%d", "", config.Port))
-	handleErrorWithMessage(err, "failed to start server")
-
+	server := server.New(rules, instantForwarder, queuedForwarder)
+	if err := server.ListenAndServe(fmt.Sprintf(":%d", config.Port)); err != nil {
+		handleErrorWithMessage(err, "failed to start server")
+	}
 }
 
 func handleErrorWithMessage(err error, message string) {
