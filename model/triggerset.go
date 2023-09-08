@@ -6,7 +6,6 @@ import (
 )
 
 type TriggerSet struct {
-	Name     string    `yaml:"name"`
 	Triggers []Trigger `yaml:"triggers"`
 	Operator Operator  `yaml:"operator"`
 }

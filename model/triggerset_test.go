@@ -20,7 +20,6 @@ func TestRuleset_Match(t *testing.T) {
 		{
 			name: "AND match",
 			TriggerSet: &TriggerSet{
-				Name: "test",
 				Triggers: []Trigger{
 					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "/test"}},
 					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "GET"}},
@@ -34,7 +33,6 @@ func TestRuleset_Match(t *testing.T) {
 		{
 			name: "AND no match",
 			TriggerSet: &TriggerSet{
-				Name: "test",
 				Triggers: []Trigger{
 					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "/test"}},
 					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "GET"}},
@@ -48,7 +46,6 @@ func TestRuleset_Match(t *testing.T) {
 		{
 			name: "OR match",
 			TriggerSet: &TriggerSet{
-				Name: "test",
 				Triggers: []Trigger{
 					{Property: PropertyPath, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "/test"}},
 					{Property: PropertyMethod, comparator: &ComparatorEqual{}, Value: PropertyValue{Value: "GET"}},
@@ -62,7 +59,6 @@ func TestRuleset_Match(t *testing.T) {
 		{
 			name: "Header mismatch error",
 			TriggerSet: &TriggerSet{
-				Name: "test",
 				Triggers: []Trigger{
 					{Property: PropertyHeader, comparator: &ComparatorEqual{}, Value: PropertyValue{Key: "key", Value: "value"}},
 				},
@@ -99,8 +95,7 @@ func TestRule_UnmarshalYAML(t *testing.T) {
 			name: "valid rule with equal comparator",
 			data: []byte(`name: example-ruleset
 triggers:
-  - name: rule1
-    property: path
+  - property: path
     comparator: equal
     value:
       value: value1
@@ -112,8 +107,7 @@ operator: AND`),
 			name: "valid rule with not_equal comparator",
 			data: []byte(`name: example-ruleset
 triggers:
-  - name: rule1
-    property: path
+  - property: path
     comparator: not_equal
     value:
       key: X-Header
@@ -126,8 +120,7 @@ operator: AND`),
 			name: "valid rule with not_equal comparator",
 			data: []byte(`name: example-ruleset
 triggers:
-  - name: rule1
-    property: query
+  - property: query
     comparator: contains
     value:
       key: X-Header
@@ -140,8 +133,7 @@ operator: AND`),
 			name: "valid rule with not_equal comparator",
 			data: []byte(`name: example-ruleset
 triggers:
-  - name: rule1
-    property: header
+  - property: header
     comparator: not_contains
     value:
       key: X-Header

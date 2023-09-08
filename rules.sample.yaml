@@ -1,5 +1,4 @@
-- triggers:
-    name: example_ruleset
+- triggerset:
     triggers:
       - name: rule_1
         property: path
@@ -9,7 +8,8 @@
     operator: and
   action:
     upstream: "http://10.136.14.189:8000"
-    delivery_mode: instant
+    delivery_mode: fallback
     timeout: 10
     delay: 10
     retries: 3
+  name: rule_1

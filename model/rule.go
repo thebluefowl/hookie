@@ -1,6 +1,7 @@
 package model
 
 type Rule struct {
-	TriggerSet *TriggerSet `yaml:"triggers"`
+	Name       string      `yaml:"name"`
+	TriggerSet *TriggerSet `yaml:"triggerset"`
 	Action     *Action     `yaml:"action"`
 }

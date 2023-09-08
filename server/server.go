@@ -20,12 +20,14 @@ type Server struct {
 }
 
 // New creates a new instance of the Server.
-func New(rulesetActions []model.Rule, instantForwarder, queuedForwarder forwarder.Forwarder) *Server {
+func New(rulesetActions []model.Rule, instantForwarder *forwarder.InstantForwarder, queuedForwarder *forwarder.QueuedForwarder) *Server {
+	fallbackForwarder := forwarder.NewFallbackForwarder(instantForwarder, queuedForwarder)
 	return &Server{
 		rulesetActions: rulesetActions,
 		forwarders: map[string]forwarder.Forwarder{
-			model.DeliveryModeInstant: instantForwarder,
-			model.DeliveryModeQueued:  queuedForwarder,
+			model.DeliveryModeInstant:  instantForwarder,
+			model.DeliveryModeQueued:   queuedForwarder,
+			model.DeliveryModeFallback: fallbackForwarder,
 		},
 	}
 
@@ -34,16 +36,21 @@ func New(rulesetActions []model.Rule, instantForwarder, queuedForwarder forwarde
 // ServeHTTP is the HTTP request handler for the server.
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	ctx := context.WithValue(req.Context(), model.ContextKey("request-id"), uuid.New().String())
+	requestID := uuid.New().String()
+	ctx := context.WithValue(req.Context(), model.ContextKey("request-id"), requestID)
 
-	ra, err := s.matchingRulesetAction(req)
+	slog.Info("INCOMING-REQUEST", slog.Any("request-id", requestID), slog.Any("method", req.Method), slog.Any("url", req.URL.String()))
+
+	r, err := s.matchRule(req)
 	if err != nil {
 		slog.Error("failed to select ruleset-action", slog.Any("err", err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
-	res, err := s.process(ctx, req, ra)
+	slog.Info("MATCHING-RULE", slog.String("request-id", requestID), slog.Any("rule", r.Name))
+
+	res, err := s.process(ctx, req, r)
 	if err != nil {
 		slog.Error("failed to process request", slog.Any("err", err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
@@ -77,7 +84,7 @@ func (s *Server) process(ctx context.Context, req *http.Request, ra *model.Rule)
 }
 
 // matchingRulesetAction finds the first matching ruleset action for a given request.
-func (s *Server) matchingRulesetAction(req *http.Request) (*model.Rule, error) {
+func (s *Server) matchRule(req *http.Request) (*model.Rule, error) {
 	for _, ra := range s.rulesetActions {
 		res, err := ra.TriggerSet.Match(req)
 		if err != nil {

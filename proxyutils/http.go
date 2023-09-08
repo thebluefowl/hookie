@@ -11,11 +11,13 @@ import (
 )
 
 type TargetRequest struct {
+	ID      string
 	Request *http.Request
 }
 
-func NewTargetRequest(in *http.Request, target *url.URL) (*TargetRequest, error) {
+func NewTargetRequest(id string, in *http.Request, target *url.URL) (*TargetRequest, error) {
 	ctx := in.Context()
+
 	out := in.Clone(ctx)
 	out.Host = in.Host
 
@@ -30,11 +32,13 @@ func NewTargetRequest(in *http.Request, target *url.URL) (*TargetRequest, error)
 	out.Close = false
 
 	return &TargetRequest{
+		ID:      id,
 		Request: out,
 	}, nil
 }
 
 type SerializableRequest struct {
+	ID      string
 	Headers map[string][]string
 	Body    []byte
 	Method  string
@@ -44,6 +48,7 @@ type SerializableRequest struct {
 
 func (tr *TargetRequest) MarshalJSON() ([]byte, error) {
 	payload := &SerializableRequest{
+		ID:      tr.ID,
 		Headers: make(map[string][]string),
 		Body:    make([]byte, 0),
 		Host:    tr.Request.Host,
@@ -78,6 +83,7 @@ func (tr *TargetRequest) UnmarshalJSON(data []byte) error {
 	for k, v := range payload.Headers {
 		tr.Request.Header[k] = v
 	}
+	tr.ID = payload.ID
 	tr.Request.URL, _ = url.Parse(payload.URL)
 	tr.Request.Body = io.NopCloser(bytes.NewBuffer(payload.Body))
 	tr.Request.Host = payload.Host
